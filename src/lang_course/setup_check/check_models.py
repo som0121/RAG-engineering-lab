@@ -9,7 +9,7 @@ load_dotenv()
 from langchain_anthropic import ChatAnthropic
 from langchain_openai import ChatOpenAI
 
-from lang_course.llm import get_model
+from lang_course.common.llm import get_model
 
 sys.stdout.reconfigure(encoding="utf-8")  # Windows console can't print emoji otherwise
 
