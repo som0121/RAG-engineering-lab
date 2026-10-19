@@ -107,6 +107,47 @@ def recursive_splitter():
     print(f"Chunk sizes; {[len(c) for c in chunks]}")
     print(f"\n First chunk preview:\n {chunks [0][:200]}...")
 
-    if __name__ == "main":
-        print("=== Recursive Character Text Spliter ===")
-        recursive_splitter()
+
+
+def overlap_importance():
+    text = "The quick brown fox jumps over the lazy dog. " * 10  # Repeated text
+
+    # Without overlap
+    no_overlap = RecursiveCharacterTextSplitter(chunk_size=50, chunk_overlap=0)
+
+    # With overlap
+    with_overlap = RecursiveCharacterTextSplitter(chunk_size=50, chunk_overlap=20)
+
+    chunks_no_overlap = no_overlap.split_text(text)
+    chunks_with_overlap = with_overlap.split_text(text)
+
+    print("Without overlap:")
+    print(f" Chunk 1 end: ...{chunks_no_overlap[0][-20:]}")
+    print(f" Chunk 2 start: {chunks_no_overlap[1][:20]}...")
+
+    print("\nWith overlap:")
+    print(f" Chunk 1 end: ...{chunks_with_overlap[0][-20:]}")
+    print(f" Chunk 2 start: {chunks_with_overlap[1][:20]}...")
+
+    # Real-world example of why overlap matters
+    api_text = (
+        "The API key expires after 24 hours. "
+        "You must refresh it using the /token endpoint. "
+        "Send a POST request with your refresh token to get a new key."
+    )
+
+    # Without overlap, this might split as:
+    # Chunk 1: "The API key expires after 24 hours."
+    # Chunk 2: "You must refresh it using the /token endpoint."
+    #
+    # User asks: "How do I handle API key expiration?"
+    # Chunk 1 matches "expiration" but misses the solution.
+    # Chunk 2 has the solution but doesn't mention "expiration".
+    #
+    # With overlap, chunk 2 would include: "...expires after 24 hours. You must refresh it..."
+
+    
+if __name__ == "__main__":
+    print("=== Recursive Character Text Splitter ===")
+    recursive_splitter()
+    overlap_importance()
