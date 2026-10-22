@@ -281,9 +281,9 @@ def demo_token_budgeting():
     for query in queries:
         try:
             result = llm.invoke(query)
-            print(f"✅ {query[:40]}... -> {result[:30]}...")
+            print(f"{query[:40]}... -> {result[:30]}...")
         except ValueError as e:
-            print(f"❌ {query[:40]}... -> {e}")
+            print(f"{query[:40]}... -> {e}")
 
     print(f"\nUsage: {llm.get_stats()}")
 
