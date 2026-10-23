@@ -71,6 +71,29 @@ Semantic_chunker = SemanticChunker(
 semantic_chunks = Semantic_chunker.split_text(document)
 
 print(f"Semantic chunks: {len(semantic_chunks)}")
+
 for i, chunk in enumerate(semantic_chunks):
     print(f"\n---- Chunk{i+1} ({len(chunk)}chars) ---")
     print(chunk[:100]+ "..." if len(chunk) > 100 else chunk)
+
+def print_chunks(chunks, method_name):
+    """Print chunks with topic detection and clear formatting."""
+
+    print(f"\n{'=' * 60}")
+    print(f" {method_name}")
+    print(f" Total chunks: {len(chunks)}")
+    print(f"{'=' * 60}")
+
+    for i, chunk in enumerate(chunks):
+        topics = detect_topics(chunk)
+        topic_label = f" | Topics: {', '.join(topics)}" if topics else ""
+
+        print(f"\n--- Chunk {i + 1} ({len(chunk)} chars){topic_label} ---")
+
+        lines = chunk.strip().split("\n")
+        preview = "\n".join(lines[:3])
+
+        if len(lines) > 3:
+            preview += "\n..."
+
+        print(preview)
