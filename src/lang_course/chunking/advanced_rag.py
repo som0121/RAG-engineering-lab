@@ -208,6 +208,45 @@ def demo_multi_query_retriever():
             f"\n{i+1}. [{doc.metadata.get('topic', 'N/A')}] {doc.page_content[:100]}..."
         )
 
+def demo_contextual_compression():
+    """Contextual Compression extracts only relevant parts."""
+
+    print("=" * 60)
+    print("CONTEXTUAL COMPRESSION RETRIEVER")
+    print("Extracts only query-relevant content from documents")
+    print("=" * 60)
+
+    vectorstore = create_base_vectorstore()
+    llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
+
+    # Create compressor
+    compressor = LLMChainExtractor.from_llm(llm)
+
+    # Wrap retriever with compression
+    compression_retriever = ContextualCompressionRetriever(
+        base_compressor=compressor,
+        base_retriever=vectorstore.as_retriever(search_kwargs={"k": 4}),
+    )
+
+    query = "What frameworks exist for building LLM applications?"
+
+    print(f"\nQuery: {query}")
+
+    # Without compression
+    base_docs = vectorstore.as_retriever(search_kwargs={"k": 2}).invoke(query)
+    print(f"\n--- WITHOUT Compression (full chunks) ---")
+    for doc in base_docs:
+        print(f"Length: {len(doc.page_content)} chars")
+        print(f"Content: {doc.page_content[:150]}...\n")
+
+
+    # With compression
+    compressed_docs = compression_retriever.invoke(query)
+    print(f"\n--- WITH Compression (relevant only) ---")
+    for doc in compressed_docs:
+        print(f"Length: {len(doc.page_content)} chars")
+        print(f"Content: {doc.page_content}\n")
+
 
 
 def demo_ensemble_hybrid_search():
