@@ -97,3 +97,41 @@ def print_chunks(chunks, method_name):
             preview += "\n..."
 
         print(preview)
+
+    # Create two vector stores - one for each chunking method
+
+    recursive_vectorstore = Chroma.from_texts(
+        recursive_chunks,
+        embeddings,
+        collection_name = 'recursive_chunks'
+    )
+
+    semantic_vectorstore = Chroma.from_texts(
+        semantic_chunks,
+        embeddings,
+        collection_name = 'semantic_chunks'
+    )
+
+    # Test queries
+
+    test_queries = [
+        'How do i authenticate with OATUH2?',
+        'What happens when I hit the rate limit?',
+        'How are webhooks secured?',
+        'What format are errors returned in?'
+    ]
+
+    def test_retrieval(query,vectorstore,name):
+
+        results = vectorstore.similarity_search(query,k=1)
+        print(f'\\n{name} - Query: \"{query}\"')
+        print(f'Retrieved: {results[0].page_content[:150]}...')
+        return results[0].page_content
+
+    print(f"\n{'='*60}")
+    print(" RETRIEVAL TESTS")
+    print(f"{'='*60}")
+
+    for query in test_queries:
+        print('='*60)
+        recursive_result = test_retrieval(query, recursive_vectorstore)
