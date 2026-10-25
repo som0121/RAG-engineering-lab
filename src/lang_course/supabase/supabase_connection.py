@@ -2,7 +2,7 @@
 import os
 from dotenv import load_dotenv
 from langchain_postgres import PGVector
-from langchain_openai import OpenAIEmbeddings
+from langchain_google_genai import GoogleGenerativeAIEmbeddings
 
 load_dotenv()
 
@@ -15,7 +15,7 @@ DATABASE_URL = SUPABASE_URL or os.getenv(
 
 
 def connect_to_supabase():
-    embeddings = OpenAIEmbeddings(model="text-embedding-3-small")
+    embeddings = GoogleGenerativeAIEmbeddings(model="gemini-embedding-001")
 
     vectorstore = PGVector(
         embeddings=embeddings,
