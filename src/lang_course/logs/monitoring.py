@@ -182,7 +182,7 @@ class InstrumentedLLM:
 
         # Gemini chat model
         self.llm = ChatGoogleGenerativeAI(
-            model="gemini-2.5-flash",
+            model="gemini-3.8-flash",
             temperature=0,
         )
 
@@ -239,7 +239,7 @@ class InstrumentedLLM:
                         "latency_ms": round(latency_ms, 2),
                         "estimated_input_tokens": input_tokens,
                         "estimated_output_tokens": output_tokens,
-                        "model": "gemini-2.5-flash",
+                        "model": "gemini-3.8-flash",
                     }
                 },
             )
