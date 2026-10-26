@@ -327,8 +327,69 @@ class InstrumentedLLM:
 
             raise
 
+def demo_monitoring():
+
+    """Demonstrate Gemini chat, embeddings, and monitoring."""
+
+    app = InstrumentedLLM()
+
+    print("Gemini Monitoring Demo\n")
+
+    # 1. Test Gemini chat
+    queries = [
+        "What is Python?",
+        "Explain machine learning.",
+        "What is 2 + 2?",
+    ]
+
+    for query in queries:
+
+        try:
+
+            result = app.invoke(query)
+
+            print(f"\nQuery: {query}")
+            print(f"Response: {result[:150]}...")
+
+        except Exception as e:
+
+            print(f"\nChat request failed: {e}")
+
+    # 2. Test Gemini embeddings
+
+
+    print("\n" + "=" * 50)
+    print("Testing Gemini Embeddings")
+    print("=" * 50)
+
+    text = "What is machine learning?"
+
+    try:
+
+        vector = app.embed_text(text)
+
+        print(f"Text: {text}")
+        print(f"Vector dimensions: {len(vector)}")
+        print(f"First 5 values: {vector[:5]}")
+
+    except Exception as e:
+
+        print(f"Embedding request failed: {e}")
+
+    # 3. Print metrics summary
+
+    print("\n" + "=" * 50)
+    print("Metrics Summary")
+    print("=" * 50)
+
+    summary = app.metrics.get_summary()
+
+    for key, value in summary.items():
+
+        print(f"{key}: {value}")
 
 if __name__ == "__main__":
 
-    logger = setup_logging()
-    logger.info("Logging setup complete", extra={"extra_data": {"app": "langgraph"}})
+    #logger = setup_logging()
+    #logger.info("Logging setup complete", extra={"extra_data": {"app": "langgraph"}})
+    demo_monitoring()
