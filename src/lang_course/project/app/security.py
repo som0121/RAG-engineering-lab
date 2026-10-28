@@ -111,3 +111,41 @@ class PIIDetector:
             elif pii_type == "ip_address":
                 masked = re.sub(pattern, "[IP REDACTED]", masked)
         return masked
+    
+
+# === Output Validation ===
+
+
+class OutputValidator:
+    """Validate LLM outputs before returning to user."""
+
+    def __init__(self):
+        self.pii_detector = PIIDetector()
+
+    def validate(self, output: str) -> tuple[bool, str, Optional[str]]:
+        """
+        Validate output.
+        Returns: (is_valid, cleaned_output, reason_if_invalid)
+        """
+        # Check for PII leakage
+        pii_found = self.pii_detector.detect(output)
+        if pii_found:
+            cleaned = self.pii_detector.mask(output)
+            return False, cleaned, f"PII detected and masked: {list(pii_found.keys())}"
+
+        # Check for harmful content patterns
+        harmful_patterns = [
+            r"here('s| is) (how|the way) to (hack|steal|attack)",
+            r"password is",
+            r"api[_\s]?key",
+        ]
+
+        for pattern in harmful_patterns:
+            if re.search(pattern, output, re.IGNORECASE):
+                return (
+                    False,
+                    "[CONTENT BLOCKED]",
+                    "Potentially harmful content detected",
+                )
+
+        return True, output, None
