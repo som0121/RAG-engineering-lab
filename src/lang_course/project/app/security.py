@@ -151,50 +151,55 @@ class OutputValidator:
         return True, output, None
 
 
-# ---- Combined Security Pipeline---
+# ---- Combined Security Pipeline ----
 
 class SecurityPipeline:
     """
     Full security pipeline that processes input and output.
-    This is the single class wired into the Api
+    This is the single class wired into the API.
     """
 
     def __init__(self):
         self.sanitizer = InputSanitizer()
         self.pii_detector = PIIDetector()
-        self.output_validator =  OutputValidator()
+        self.output_validator = OutputValidator()
 
-    @traceable(name = "security_check_input")
-    def check_input(self,text:str) -> tuple[bool, str, list[str]]:
+    @traceable(name="security_check_input")
+    def check_input(self, text: str) -> tuple[bool, str, list[str]]:
         """
         Process input through security checks.
         Returns: (is_allowed, cleaned_text, security_notes)
         """
 
-        # Step1: Check for injection
-        
-        is_safe, reason = self.sanitizer.check(text)
-        if not is_safe:
+        notes = []
+
+        # Step 1: Check for prompt injection
+        suspicious, reason = self.sanitizer.is_suspicious(text)
+
+        if suspicious:
             return False, "", [reason]
 
-        #Step 2: clean input
+        # Step 2: Sanitize the input
+        cleaned = self.sanitizer.sanitize(text)
 
-        cleaned = self.sanitizer.clean(text)
-
-        #Step3: Mask PII before it reaches the LLM
+        # Step 3: Detect and mask PII
         pii_found = self.pii_detector.detect(cleaned)
 
         if pii_found:
             cleaned = self.pii_detector.mask(cleaned)
-            notes.append(f"input PII masked:{list(pii_found.keys())}")
+            notes.append(
+                f"Input PII masked: {list(pii_found.keys())}"
+            )
 
         return True, cleaned, notes
 
-    @traceable(name = "security_check_output")
-    def check_output(Self, text:str) -> tuple[str, list[str]]:
-
-        """Validate output before returning to client.
-           Returns: (cleaned_output, warnings)
+    @traceable(name="security_check_output")
+    def check_output(
+        self, text: str
+    ) -> tuple[bool, str, Optional[str]]:
         """
+        Validate output before returning it to the client.
+        Returns: (is_valid, cleaned_output, reason_if_invalid)
+        """
+
         return self.output_validator.validate(text)
-    
