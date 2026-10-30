@@ -21,7 +21,7 @@ class AgentState(TypedDict):
     messages: Annotated[list[BaseMessage], add_messages]
     error: Optional[str]
     retry_count: int
-    model_used:int
+    model_used:str
 
 class productionAgent:
     """
@@ -39,6 +39,7 @@ class productionAgent:
             temperature=0,
             timeout=30,
             max_retries=0, # We handle retries ourselves
+            api_key= settings.openai_api_key,
         )
 
         self.fallback_llm = ChatOpenAI(
@@ -46,10 +47,11 @@ class productionAgent:
             temperature= 0,
             timeout= 30,
             max_retries= 0,
+            api_key= settings.openai_api_key,
 
         )
         self.max_retries = settings.max_retries
-        self.graph = self.__build_graph()
+        self.graph = self._build_graph()
 
     def _build_graph(self):
         """Build the Langraph state machine."""
@@ -58,12 +60,16 @@ class productionAgent:
             """Try to process the message with the primary model."""
 
             try:
-                response = self.primary_llm.invoke(state["message"])
-                return{
-                    "message": [response],
+                response = self.primary_llm.invoke(state["messages"])
+
+                return {
+                     
+                    "messages": [response],
                     "error": None,
                     "model_used": "primary",
+
                 }
+            
             except Exception as e:
                 return{
                     "error": str(e),
@@ -101,26 +107,23 @@ class productionAgent:
                 ], "model_used": "error_handler",
             }
 
-        def route_after_process(state:AgentState) -> str:
-            """Decide what to do after primary model attempt."""
+        def route_after_process(state: AgentState) -> str:
+            """Decide what to do after the primary model attempt."""
 
             if state.get("error") is None:
                 return "done"
-            elif state["retry_count"] < self.max_retries:
-                return "fallback"
 
-            else:
-                return "error"
+            return "fallback"
 
-        def route_after_fallback(state:AgentState) -> str:
-            """Decide what to do after fallback attempt"""
+        def route_after_fallback(state: AgentState) -> str:
+            """Decide what to do after the fallback model attempt."""
+
             if state.get("error") is None:
                 return "done"
 
-            else:
-                return "error"
+            return "error"
 
-        #Build the graph
+        # Build the graph
 
         graph = StateGraph(AgentState)
 
@@ -129,24 +132,49 @@ class productionAgent:
         graph.add_node("error", handle_error)
 
         graph.add_edge(START, "process")
-        graph.add_conditional_edges(
-            "process",
-            route_after_process,
-            {"done": END, "fallback": "fallback", "error": "error"},
-        )
-        graph.add_conditional_edges(
-            "process",
-            route_after_process,
-            {"done": END, "fallback": "fallback", "error": "error"},
 
+        graph.add_conditional_edges(
+            "process",
+            route_after_process,
+            {
+                "done": END,
+                "fallback": "fallback",
+                "error": "error",
+            },
         )
+
         graph.add_conditional_edges(
             "fallback",
             route_after_fallback,
-            {"done": END, "error": "error"},
+            {
+                "done": END,
+                "error": "error",
+            },
         )
 
         graph.add_edge("error", END)
 
         return graph.compile()
+
+    @traceable(name = "production_agent_invoke")
+    def invoke(self,message:str) -> dict:
+
+        """
+        Invoke the agent with a user message.
+        Returns: {"response": str, "model_used": str, "error": str|None}
+        """
+
+        result = self.graph.invoke({
+            "messages": [HumanMessage(content= message)],
+            "error": None,
+            "retry_count": 0,
+            "model_used": "",
+        })
+
+        return{
+            "response": result["messages"][-1].content,
+            "model_used": result.get("model_used", "unknown"),
+            "error": result.get("error")
+
+        }
     
