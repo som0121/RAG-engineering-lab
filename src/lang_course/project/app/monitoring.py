@@ -40,6 +40,30 @@ def get_logger(name:str = "production-api") -> logging.Logger:
         return logger
     
 
+# === Request Timing ===
+
+class RequestTimer:
+    """Context manager that measures elapsed wall-clock time in milliseconds."""
+
+    def __init__(self):
+        self.start = 0.0
+        self.end = None
+
+    def __enter__(self) -> "RequestTimer":
+        self.start = time.perf_counter()
+        return self
+
+    def __exit__(self, *exc) -> None:
+        self.end = time.perf_counter()
+
+    @property
+    def elapsed_ms(self) -> float:
+        """Elapsed time so far (or total, once the block has exited)."""
+
+        end = self.end if self.end is not None else time.perf_counter()
+        return round((end - self.start) * 1000, 2)
+
+
 # === Metrics Collection ===
 
 
@@ -61,8 +85,8 @@ class MetricsCollector:
     def record_request(
         self,
         latency_ms: float,
-        input_tokens: int,
-        output_tokens: int,
+        input_tokens: int = 0,
+        output_tokens: int = 0,
         error: bool = False,
         cache_hit: bool = False,
     ) -> None:

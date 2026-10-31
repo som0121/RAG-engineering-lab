@@ -316,8 +316,8 @@ The agent tests mock the LLMs, so they run offline and need no API key.
 ## Known issues and roadmap
 
 - [ ] **API routes**: add `POST /chat`, `GET /health`, `GET /metrics`, connect SlowAPI, and fill in `tests/test_api.py`.
-- [ ] **`app/models.py`**: `ChatResponse.timestamp` uses `timezone.utc` without importing `timezone`, and is typed `str` but returns a `datetime`.
-- [ ] **`supabase/` lessons**: need `langchain-postgres`, which isn't in `pyproject.toml` yet (`uv add langchain-postgres`).
+- [x] **`app/models.py`**: `ChatResponse.timestamp` is now an ISO-8601 UTC string (`timezone` was missing from the imports).
+- [x] **`supabase/` lessons**: `langchain-postgres` added to `pyproject.toml`.
 - [ ] **OpenAI-based lessons** (4, 7, 9–13): switch to `common.llm.get_model()` / `get_embeddings()` so they follow the Gemini `.env` settings.
 - [ ] `src/lang_course/project/main.py` is an empty placeholder.
 
