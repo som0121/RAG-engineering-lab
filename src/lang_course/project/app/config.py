@@ -10,9 +10,9 @@ class Settings(BaseSettings):
 
     #LLM Configuration
 
-    openai_api_key: str
-    primary_model:str = "gpt-4o-mini"
-    fallback_model: str = "gpt-4o-mini"
+    google_api_key: str
+    primary_model:str = "gemini-3.5-flash-lite"
+    fallback_model: str = "gemini-3.1-flash-lite"
 
     #LangSmith
     langchain_tracing_v2:bool = True

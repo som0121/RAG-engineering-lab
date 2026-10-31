@@ -12,7 +12,7 @@ def create_agent():
     settings = MagicMock()
     settings.primary_model = "primary-test-model"
     settings.fallback_model = "fallback-test-model"
-    settings.openai_api_key = "test-api-key"
+    settings.google_api_key = "test-api-key"
     settings.max_retries = 1
 
     primary_llm = MagicMock()
@@ -20,7 +20,7 @@ def create_agent():
 
     with patch("app.agent.get_settings", return_value=settings):
         with patch(
-            "app.agent.ChatOpenAI",
+            "app.agent.ChatGoogleGenerativeAI",
             side_effect=[primary_llm, fallback_llm],
         ):
             agent = productionAgent()

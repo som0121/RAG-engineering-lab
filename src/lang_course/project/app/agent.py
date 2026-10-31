@@ -4,7 +4,7 @@ from typing import Optional
 from typing_extensions import TypedDict, Annotated
 from langgraph.graph import StateGraph, START,END
 from langgraph.graph.message import add_messages
-from langchain_openai import ChatOpenAI
+from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.messages import HumanMessage, AIMessage, BaseMessage
 from langsmith import traceable
 
@@ -34,20 +34,20 @@ class productionAgent:
     def __init__(self):
         settings = get_settings()
 
-        self.primary_llm = ChatOpenAI(
+        self.primary_llm = ChatGoogleGenerativeAI(
             model = settings.primary_model,
             temperature=0,
             timeout=30,
             max_retries=0, # We handle retries ourselves
-            api_key= settings.openai_api_key,
+            api_key= settings.google_api_key,
         )
 
-        self.fallback_llm = ChatOpenAI(
+        self.fallback_llm = ChatGoogleGenerativeAI(
             model = settings.fallback_model,
             temperature= 0,
             timeout= 30,
             max_retries= 0,
-            api_key= settings.openai_api_key,
+            api_key= settings.google_api_key,
 
         )
         self.max_retries = settings.max_retries
@@ -172,7 +172,7 @@ class productionAgent:
         })
 
         return{
-            "response": result["messages"][-1].content,
+            "response": result["messages"][-1].text,  # .text flattens Gemini's content blocks to a str
             "model_used": result.get("model_used", "unknown"),
             "error": result.get("error")
 

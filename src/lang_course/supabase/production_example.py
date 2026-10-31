@@ -28,7 +28,7 @@ class Config:
 
     collection_name: str = "production_documents_gemini"
     embedding_model: str = "gemini-embedding-001"
-    chat_model: str = "gemini-3.8-flash"
+    chat_model: str = "gemini-3.5-flash-lite"
     temperature: float = 0.0
     default_k: int = 5
     min_similarity: float = 0.5

@@ -35,7 +35,7 @@ logger.error(
     "Model request failed",
     extra={
         "extra_data": {
-            "model": "gemini-2.5-flash",
+            "model": "gemini-3.5-flash-lite",
             "status_code": 500,
         }
     },

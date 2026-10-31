@@ -1,0 +1,6 @@
+{
+    // Let Pylance resolve `from app.x import ...` in the FastAPI project
+    "python.analysis.extraPaths": [
+        "src/lang_course/project"
+    ]
+}
