@@ -80,7 +80,7 @@ Lang-course/
 │   │   └── production_example.py   RAGService on pgvector with Gemini
 │   └── project/                    Production FastAPI service (its own uv project, see below)
 │       ├── app/
-│       │   ├── main.py             FastAPI app + lifespan (startup / shutdown)
+│       │   ├── main.py             FastAPI app, lifespan, rate limiting, /chat /health /metrics routes
 │       │   ├── config.py           Pydantic Settings, loaded from .env
 │       │   ├── agent.py            LangGraph agent: primary → fallback → graceful error
 │       │   ├── cache.py            TTL response cache (SHA-256 keys)
@@ -247,12 +247,12 @@ The response is always plain text: `.text` flattens Gemini's content blocks into
 
 | Module | Responsibility |
 |--------|----------------|
-| `main.py` | Creates the `FastAPI` app. `lifespan()` builds the shared components on startup and logs a metrics summary on shutdown. |
+| `main.py` | Creates the `FastAPI` app. `lifespan()` builds the shared components on startup and logs a metrics summary on shutdown. Defines the routes, the SlowAPI limiter, and the 429 / 500 exception handlers. |
 | `config.py` | `Settings` (pydantic-settings) reads `.env`. Cached by `get_settings()`. |
 | `agent.py` | LangGraph state machine with `ChatGoogleGenerativeAI` primary and fallback models, traced with `@traceable`. |
 | `cache.py` | `ResponseCache`: in-memory TTL cache keyed by the SHA-256 of the normalized query, with hit/miss stats. |
 | `security.py` | `InputSanitizer` (prompt-injection patterns), `PIIDetector` (email, phone, SSN, card, IP masking), `OutputValidator` (blocks leaked secrets / harmful text), combined in `SecurityPipeline`. |
-| `monitoring.py` | `JSONFormatter`, `get_logger()`, `MetricsCollector` (requests, errors, latency, tokens, cache hit rate). |
+| `monitoring.py` | `JSONFormatter`, `get_logger()`, `RequestTimer` (per-request latency), `MetricsCollector` (requests, errors, latency, tokens, cache hit rate). |
 | `models.py` | `ChatRequest`, `ChatResponse`, `HealthResponse`, `MetricsResponse`, `ErrorResponse`. |
 
 ### Running
@@ -269,8 +269,48 @@ Startup logs are JSON, for example:
 {"level": "INFO", "message": "Starting production API...", "environment": "development", "primary_model": "gemini-3.5-flash-lite", "tracing_enabled": true}
 ```
 
-> **Note:** the HTTP routes (`POST /chat`, `GET /health`, `GET /metrics`) are not written yet.
-> The components and schemas they'll use are in place. See the [roadmap](#known-issues-and-roadmap).
+Interactive API docs are served at `http://127.0.0.1:8000/docs`.
+
+### Endpoints
+
+| Method | Path | Rate limited | Returns |
+|--------|------|--------------|---------|
+| `POST` | `/chat` | yes (`RATE_LIMIT`, per client IP) | `ChatResponse` |
+| `GET` | `/health` | no | `HealthResponse`: environment plus the status of the agent, cache (with hit/miss stats) and security pipeline |
+| `GET` | `/metrics` | no | `MetricsResponse`: totals, error rate, average latency, token estimates, cache hit rate |
+
+**`POST /chat`**
+
+```bash
+curl -X POST http://127.0.0.1:8000/chat \
+  -H "Content-Type: application/json" \
+  -d '{"message": "What is LangGraph?", "thread_id": "demo"}'
+```
+
+```json
+{
+  "response": "LangGraph is ...",
+  "thread_id": "demo",
+  "model_used": "primary",
+  "cached": false,
+  "processing_time_ms": 812.4,
+  "timestamp": "2026-10-31T13:24:33.249179+00:00"
+}
+```
+
+`model_used` is `primary`, `fallback`, `error_handler` (both models failed) or `cache`.
+The agent call runs in a threadpool so it doesn't block the event loop. The `error_handler`
+fallback reply is never cached and counts as an error in `/metrics`. Token counts are
+estimated at about 1.3 tokens per word.
+
+**Error responses**
+
+| Status | When | Body |
+|--------|------|------|
+| `400` | Input blocked by the prompt-injection check | `{"detail": "Your message was blocked by our security filters."}` |
+| `422` | Invalid body (for example an empty `message` or one over 1000 characters) | FastAPI validation error |
+| `429` | Client exceeded `RATE_LIMIT` | `ErrorResponse`: `{"error": "Rate limit exceeded", "detail": "Too many requests: 20 per 1 minute. ..."}` |
+| `500` | Agent invocation or any other unhandled error | `{"detail": ...}` or `ErrorResponse`, never a stack trace |
 
 ---
 
@@ -308,14 +348,15 @@ The agent tests mock the LLMs, so they run offline and need no API key.
 
 - `.env` files are gitignored. Commit only `.env.example` with placeholder values.
 - If a key is ever pasted somewhere public (a chat, an issue, a log), revoke it and generate a new one.
-- `SecurityPipeline` is built so that input is checked and sanitized before it reaches the model, and output is validated before it's returned. It's created at startup; the routes that will call it are still on the roadmap.
+- `SecurityPipeline` is built so that input is checked and sanitized before it reaches the model, and output is validated before it's returned. It's created at startup and called by `POST /chat` on every request.
 - PII (email, phone, SSN, card number, IP address) is masked before text reaches the model.
 
 ---
 
 ## Known issues and roadmap
 
-- [ ] **API routes**: add `POST /chat`, `GET /health`, `GET /metrics`, connect SlowAPI, and fill in `tests/test_api.py`.
+- [x] **API routes**: `POST /chat`, `GET /health`, `GET /metrics` added, with SlowAPI rate limiting.
+- [ ] **`tests/test_api.py`**: still empty. Add route tests with `TestClient` and a mocked agent.
 - [x] **`app/models.py`**: `ChatResponse.timestamp` is now an ISO-8601 UTC string (`timezone` was missing from the imports).
 - [x] **`supabase/` lessons**: `langchain-postgres` added to `pyproject.toml`.
 - [ ] **OpenAI-based lessons** (4, 7, 9–13): switch to `common.llm.get_model()` / `get_embeddings()` so they follow the Gemini `.env` settings.
