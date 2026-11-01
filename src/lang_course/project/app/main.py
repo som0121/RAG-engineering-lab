@@ -1,3 +1,18 @@
+"""
+Production-Ready FastAPI + LangGraph Application
+
+Wires together:
+
+- Security pipeline (input sanitization, PII masking)
+- Response caching
+- Rate limit (slowapi)
+- LangGraph agent(with retries + fallback)
+- structured logging + metrics
+- Langsmith tracing
+- Health checks 
+"""
+
+
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request, HTTPException

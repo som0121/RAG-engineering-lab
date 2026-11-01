@@ -46,8 +46,8 @@ class ResponseCache:
                 # Expired - remove it
                 del self._cache[key]
 
-            self._misses += 1
-            return None
+        self._misses += 1
+        return None
 
     def set(self, query: str, response: str)-> None:
         """Cache a response"""

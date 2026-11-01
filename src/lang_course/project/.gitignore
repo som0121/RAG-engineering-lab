@@ -1,29 +1,79 @@
-# Environment variables
+# =====================================================================
+# Environment variables & secrets: NEVER commit these
+# =====================================================================
+# .env holds the real values for:
+#   GOOGLE_API_KEY        (secret)
+#   LANGSMITH_API_KEY     (secret)
+#   PRIMARY_MODEL, FALLBACK_MODEL
+#   LANGSMITH_TRACING, LANGSMITH_PROJECT, LANGSMITH_ENDPOINT
+#   APP_ENV, LOG_LEVEL, RATE_LIMIT, CACHE_TTL_SECONDS, MAX_RETRIES
+# Commit only .env.example (placeholder values). On Render, secrets are
+# entered in the dashboard (see render.yaml, `sync: false`).
+
+# Any .env file: .env, .env.local, .env.production, .env.docker, ...
 .env
 .env.*
+*.env
+.envrc
 !.env.example
 
-# Virtual environment
+# Other secret/credential files
+secrets/
+*.secret
+*.secrets
+secrets.*
+credentials.json
+service-account*.json
+*-credentials.json
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Docker Compose local overrides (can contain env values)
+compose.override.y*ml
+docker-compose.override.y*ml
+
+# =====================================================================
+# Python / uv
+# =====================================================================
 .venv/
 venv/
-
-# Python cache
+env/
 __pycache__/
 *.py[cod]
+*.so
+.python-cache/
+.uv-cache/
 
-# Testing
+# Testing & coverage
 .pytest_cache/
 .coverage
+.coverage.*
 htmlcov/
-
-# IDE
-.vscode/
+.tox/
+.mypy_cache/
+.ruff_cache/
 
 # Build files
 dist/
 build/
 *.egg-info/
 
-# OS files
+# Jupyter
+.ipynb_checkpoints/
+
+# =====================================================================
+# Logs & local data
+# =====================================================================
+*.log
+logs/
+
+# =====================================================================
+# IDE & OS
+# =====================================================================
+.vscode/
+.idea/
+*.swp
 .DS_Store
 Thumbs.db

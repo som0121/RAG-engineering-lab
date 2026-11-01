@@ -1,0 +1,70 @@
+# render.yaml - Infrastructure as code for Render
+# Docs: https://render.com/docs/blueprint-spec
+#
+# Deploy: Render dashboard → New → Blueprint → pick this repo, and set
+#   Blueprint Path: src/lang_course/project/render.yaml
+# (Render looks for render.yaml at the repo root unless you give it this path.)
+#
+# Render clones the whole repo, so the paths below are relative to the repo root.
+
+services:
+  - type: web
+    name: production-langraph-api
+    runtime: docker           # build with the same Dockerfile used locally by docker compose
+    region: oregon            # singapore is closer to India if you want lower latency
+    plan: free                # free instances sleep after ~15 min idle; starter keeps it always on
+    branch: main
+
+    # The API is a subfolder of this repo, so point Render at its Dockerfile and build context
+    dockerfilePath: ./src/lang_course/project/Dockerfile
+    dockerContext: ./src/lang_course/project
+
+    # Only redeploy when the API changes, not when lessons change
+    autoDeploy: true
+    buildFilter:
+      paths:
+        - src/lang_course/project/**
+
+    # Render uses this instead of the Dockerfile HEALTHCHECK
+    healthCheckPath: /health
+
+    envVars:
+      # --- Secrets: must be set in the Render dashboard - NEVER commit secrets ---
+      - key: GOOGLE_API_KEY
+        sync: false
+      - key: LANGSMITH_API_KEY
+        sync: false
+
+      # --- Port the container listens on (uvicorn --port 8000 in the Dockerfile) ---
+      - key: PORT
+        value: "8000"
+
+      # --- Trust Render's proxy so rate limiting sees each client's real IP ---
+      - key: FORWARDED_ALLOW_IPS
+        value: "*"
+
+      # --- App settings ---
+      - key: APP_ENV
+        value: production
+      - key: LOG_LEVEL
+        value: INFO
+      - key: RATE_LIMIT
+        value: "20/minute"
+      - key: CACHE_TTL_SECONDS
+        value: "300"
+      - key: MAX_RETRIES
+        value: "3"
+
+      # --- Models ---
+      - key: PRIMARY_MODEL
+        value: gemini-3.5-flash-lite
+      - key: FALLBACK_MODEL
+        value: gemini-3.1-flash-lite
+
+      # --- LangSmith tracing ---
+      - key: LANGSMITH_TRACING
+        value: "true"
+      - key: LANGSMITH_PROJECT
+        value: multi-agent-research-system
+      - key: LANGSMITH_ENDPOINT
+        value: https://api.smith.langchain.com
