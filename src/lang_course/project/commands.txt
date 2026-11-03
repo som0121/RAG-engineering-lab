@@ -1,3 +1,9 @@
+# start the server (terminal 1)
+
+deactivate    # only if the prompt shows (lang-course)
+cd C:\Lang-course\src\lang_course\project
+uv run uvicorn app.main:app --reload --reload-dir app --port 8000
+
 # health check
 
 Invoke-RestMethod "$api/health" | ConvertTo-Json -Depth 5

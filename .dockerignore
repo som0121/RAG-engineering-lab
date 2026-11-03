@@ -1,0 +1,9 @@
+# Used by the repo-root Dockerfile: send only what the API image needs
+# (keeps lessons, .venv folders and every .env file out of the build)
+*
+!src/lang_course/project/pyproject.toml
+!src/lang_course/project/uv.lock
+!src/lang_course/project/app/
+**/__pycache__
+**/.env
+**/.env.*

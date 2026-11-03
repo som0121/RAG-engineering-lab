@@ -127,7 +127,7 @@ uv sync
 cp .env.example .env                        # Windows: copy .env.example .env
 #   → set GOOGLE_API_KEY in .env
 uv run pytest
-uv run uvicorn app.main:app --reload        # serves on http://127.0.0.1:8000
+uv run uvicorn app.main:app --reload --reload-dir app   # serves on http://127.0.0.1:8000
 ```
 
 Always run code through `uv run`. Plain `python` uses your system interpreter, which
@@ -259,9 +259,17 @@ The response is always plain text: `.text` flattens Gemini's content blocks into
 
 ```bash
 cd src/lang_course/project
-uv run uvicorn app.main:app --reload            # dev
+uv run uvicorn app.main:app --reload --reload-dir app   # dev
 uv run uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 2   # prod-style
 ```
+
+`--reload-dir app` makes the dev server watch only your code. Without it, `--reload`
+also watches `.venv`, and the server restarts (sometimes with a `KeyboardInterrupt` /
+`BrokenPipeError` traceback) whenever `uv` installs or updates packages.
+
+If your terminal shows `(lang-course)` in the prompt, the lessons' venv is active and
+`uv` prints a `VIRTUAL_ENV ... does not match` warning. Run `deactivate` first; `uv run`
+always uses this project's own `.venv`.
 
 Startup logs are JSON, for example:
 
